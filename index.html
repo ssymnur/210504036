@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Counter dApp</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+    .btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .btn:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    .info-box {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 1rem;
+      width: 100%;
+      max-width: 450px;
+      margin-top: 1rem;
+      line-height: 1.6;
+    }
+    .label {
+      font-weight: bold;
+    }
+    .value {
+      color: #000;
+      margin-left: 5px;
+    }
+    .section {
+      width: 100%;
+      max-width: 450px;
+      margin-top: 1rem;
+    }
+    .divider {
+      margin: 1.5rem 0 0.5rem 0;
+      font-weight: bold;
+    }
+    .log {
+      background: #0b0b1a;
+      color: white;
+      border-radius: 8px;
+      padding: 0.8rem;
+      width: 100%;
+      height: 30px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Counter dApp</h1>
+
+  <div class="section">
+    <button class="btn" id="connectBtn">MetaMask'e Bağlan</button>
+    <button class="btn" id="readBtn" disabled>Değeri Oku</button>
+    <button class="btn" id="incBtn" disabled>Artır</button>
+    <button class="btn" id="decBtn" disabled>Azalt</button>
+  </div>
+
+  <div class="info-box">
+    <div><span class="label">Hesap:</span> <span class="value" id="account">—</span></div>
+    <div><span class="label">Ağ:</span> <span class="value" id="network">—</span></div>
+    <div><span class="label">Kontrat:</span> <span class="value" id="contract">—</span></div>
+  </div>
+
+  <div class="info-box">
+    <div><span class="label">Güncel Değer:</span> <span class="value" id="value">—</span></div>
+  </div>
+
+  <div class="divider">Günlük</div>
+  <div class="log" id="log"></div>
+
+  <!-- Ethers.js kütüphanesi -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+
+<script src="app.js" defer></script>
+
+
+  <script>
+    window.onload = function() {
+      let provider;
+      let signer;
+      let contract;
+
+      const connectBtn = document.getElementById("connectBtn");
+      const readBtn = document.getElementById("readBtn");
+      const incBtn = document.getElementById("incBtn");
+      const decBtn = document.getElementById("decBtn");
+      const accountEl = document.getElementById("account");
+      const networkEl = document.getElementById("network");
+      const contractEl = document.getElementById("contract");
+      const logEl = document.getElementById("log");
+      const valueEl = document.getElementById("value");
+
+      // Kontrat adresi ve ABI
+      const contractAddress = "0xb27A31f1b0AF2946B7F582768f03239b1eC07c2c";
+      const contractABI = [ /* ABI’nizi buraya ekleyin */ ];
+
+      connectBtn.onclick = async () => {
+        if (window.ethereum) {
+          try {
+            await window.ethereum.request({ method: "eth_requestAccounts" });
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            signer = provider.getSigner();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+            const account = await signer.getAddress();
+            const network = await provider.getNetwork();
+            accountEl.textContent = account;
+            networkEl.textContent = network.name;
+            contractEl.textContent = contractAddress;
+
+            readBtn.disabled = false;
+            incBtn.disabled = false;
+            decBtn.disabled = false;
+
+            logEl.textContent = "MetaMask’e bağlandı!";
+          } catch (err) {
+            logEl.textContent = "Bağlanırken hata: " + err.message;
+          }
+        } else {
+          logEl.textContent = "MetaMask yüklü değil!";
+        }
+      };
+
+      readBtn.onclick = async () => {
+        try {
+          const value = await contract.getValue(); // kontrat fonksiyon adı düzeltildi
+          valueEl.textContent = value.toString();
+          logEl.textContent = "Değer okundu: " + value;
+        } catch (err) {
+          logEl.textContent = "Hata: " + err.message;
+        }
+      };
+
+      incBtn.onclick = async () => {
+        try {
+          const tx = await contract.increment(1); // parametre gerekiyorsa ekleyin
+          await tx.wait();
+          logEl.textContent = "Değer artırıldı!";
+          readBtn.click();
+        } catch (err) {
+          logEl.textContent = "Hata: " + err.message;
+        }
+      };
+
+      decBtn.onclick = async () => {
+        try {
+          const tx = await contract.decrement(1); // parametre gerekiyorsa ekleyin
+          await tx.wait();
+          logEl.textContent = "Değer azaltıldı!";
+          readBtn.click();
+        } catch (err) {
+          logEl.textContent = "Hata: " + err.message;
+        }
+      };
+    };
+  </script>
+</body>
+</html>
+<!-- Ethers.js kütüphanesi -->
+<script src="./ethers.min.js"></script>
+
+<!-- Senin dApp kodun -->
+<script>
+  console.log("Ethers tipi:", typeof ethers);
+</script>
+
