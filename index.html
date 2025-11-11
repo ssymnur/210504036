@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <title>SC210504036 — Minimal Frontend</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      max-width: 600px; 
+      margin: auto; 
+      background: #f8f9fa;
+    }
+    h2 { color: #333; }
+    input, button { 
+      padding: 8px; 
+      margin: 4px; 
+      border-radius: 6px; 
+      border: 1px solid #ccc; 
+    }
+    button { 
+      background-color: #007bff; 
+      color: white; 
+      cursor: pointer; 
+    }
+    button:hover { background-color: #0056b3; }
+    .row { margin-bottom: 16px; }
+    span { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>SC210504036 — Minimal Frontend</h2>
+
+  <div class="row">
+    <button id="connectBtn">Connect to MetaMask</button>
+    <span id="acc"></span>
+  </div>
+
+  <div class="row">
+    <button id="readBtn">Read Value</button>
+    <span id="currentValue">-</span>
+  </div>
+
+  <div class="row">
+    <input id="incInput" type="number" placeholder="Increment by"/>
+    <button id="incBtn">Increment Value</button>
+  </div>
+
+  <!-- Ethers.js (tarayıcı uyumlu sürüm) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
+  <script>
+    // ====== CONTRACT INFO ======
+    const CONTRACT_ADDRESS = "0x4DD0dae2470A08616ea6A0f77688E4D6CC31c143"; // kendi contract adresin
+    const CONTRACT_ABI = [
+      {
+        "inputs":[{"internalType":"uint256","name":"_by","type":"uint256"}],
+        "name":"increment",
+        "outputs":[],
+        "stateMutability":"nonpayable",
+        "type":"function"
+      },
+      {
+        "inputs":[],
+        "name":"getValue",
+        "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+        "stateMutability":"view",
+        "type":"function"
+      }
+    ];
+    // ============================
+
+    let provider, signer, contract;
+
+    // MetaMask bağlantısı
+    async function connect() {
+      if (!window.ethereum) return alert("⚠️ MetaMask yüklü değil!");
+      try {
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        document.getElementById("acc").innerText = addr;
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        alert("✅ MetaMask başarıyla bağlandı!");
+      } catch (err) {
+        console.error(err);
+        alert("❌ MetaMask bağlantısı başarısız: " + err.message);
+      }
+      async function connect() {
+  if (!window.ethereum) return alert("⚠️ MetaMask yüklü değil!");
+
+  try {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== 11155111) { // 11155111 = Sepolia Chain ID
+      alert("⚠️ Lütfen MetaMask ağını Sepolia'ya değiştir!");
+      return;
+    }
+
+    const addr = await signer.getAddress();
+    document.getElementById("acc").innerText = addr;
+
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    alert("✅ MetaMask başarıyla Sepolia ağına bağlandı!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ MetaMask bağlantısı başarısız: " + err.message);
+  }
+}
+
+    }
+
+    // Değeri okuma
+    async function readValue() {
+      if (!contract) return alert("⚠️ Önce MetaMask’e bağlan.");
+      try {
+        const v = await contract.getValue();
+        document.getElementById("currentValue").innerText = v.toString();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Değer okunamadı: " + err.message);
+      }
+    }
+
+    // Değeri artırma
+    async function incrementValue() {
+      if (!contract) return alert("⚠️ Önce MetaMask’e bağlan.");
+      const val = document.getElementById("incInput").value;
+      if (!val) return alert("⚠️ Lütfen bir sayı gir!");
+      try {
+        const tx = await contract.increment(val);
+        await tx.wait();
+        alert("✅ Increment işlemi tamamlandı!");
+        readValue();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Increment başarısız: " + err.message);
+      }
+    }
+
+    // Buton event listener’ları
+    document.getElementById("connectBtn").onclick = connect;
+    document.getElementById("readBtn").onclick = readValue;
+    document.getElementById("incBtn").onclick = incrementValue;
+  </script>
+</body>
+</html>
